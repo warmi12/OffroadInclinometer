@@ -1,0 +1,4 @@
+[submodule "libs/FreeRTOS"]
+	path = libs/FreeRTOS
+	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+	branch = smp

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 set(INCLUDE_DIRS
   inc
+  ${CMAKE_SOURCE_DIR}/inc/IMUTask
 )
 
 add_library(Config STATIC

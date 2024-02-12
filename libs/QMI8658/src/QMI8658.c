@@ -376,9 +376,9 @@ void QMI8658_read_xyz(float acc[3], float gyro[3], unsigned int *tim_count)
 
 #if defined(QMI8658_UINT_MG_DPS)
 	// mg
-	acc[AXIS_X] = (float)(raw_acc_xyz[AXIS_X] * 1000.0f) / acc_lsb_div;
-	acc[AXIS_Y] = (float)(raw_acc_xyz[AXIS_Y] * 1000.0f) / acc_lsb_div;
-	acc[AXIS_Z] = (float)(raw_acc_xyz[AXIS_Z] * 1000.0f) / acc_lsb_div;
+	acc[AXIS_X] = (float)(raw_acc_xyz[AXIS_X]) / acc_lsb_div;
+	acc[AXIS_Y] = (float)(raw_acc_xyz[AXIS_Y]) / acc_lsb_div;
+	acc[AXIS_Z] = (float)(raw_acc_xyz[AXIS_Z]) / acc_lsb_div;
 #else
 	// m/s2
 	acc[AXIS_X] = (float)(raw_acc_xyz[AXIS_X] * ONE_G) / acc_lsb_div;

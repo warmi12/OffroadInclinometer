@@ -27,6 +27,7 @@
 # THE SOFTWARE.
 ******************************************************************************/
 #include "DEV_Config.h"
+#include "IMUTask.h"
 
 uint slice_num;
 uint dma_tx;
@@ -205,6 +206,10 @@ uint8_t DEV_Module_Init(void)
     gpio_set_function(DEV_SCL_PIN, GPIO_FUNC_I2C);
     gpio_pull_up(DEV_SDA_PIN);
     gpio_pull_up(DEV_SCL_PIN);
+    // GPIO irq config
+    gpio_set_irq_enabled(24, GPIO_IRQ_EDGE_RISE, true);
+    gpio_add_raw_irq_handler(24, &vIMUCallback);
+    irq_set_enabled(IO_IRQ_BANK0, true);
     // Timer Config
     // IRQ Config
     DEV_KEY_Config(Touch_INT_PIN);

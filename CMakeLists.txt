@@ -27,9 +27,11 @@ set(GLOBAL_DEFINES
 
 add_executable(${CMAKE_PROJECT_NAME}
     ${CMAKE_SOURCE_DIR}/src/main.c
+    ${CMAKE_SOURCE_DIR}/src/IMUTask/IMUTask.c
 )
 
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+    ${CMAKE_SOURCE_DIR}/inc/IMUTask
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ${GLOBAL_DEFINES})

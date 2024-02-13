@@ -1,4 +1,5 @@
 build/
-libs/FreeRTOS
-libs/lvgl
+libs/lvgl/bin
+libs/lvgl/src
+libs/lvgl/lvgl-subbuild
 .vscode

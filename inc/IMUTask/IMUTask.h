@@ -1,17 +1,19 @@
 #ifndef IMU_TASK_H
 #define IMU_TASK_H
 
+#include "Fusion.h"
+
 #define SAMPLE_RATE 1000U
 #define WAIT_TIMEOUT 1000U
 #define SEC 1
 #define CALIB_TIME_MS (5 * SEC * SAMPLE_RATE)
 
-typedef enum IMUTaskState 
+typedef enum
 {
-    INIT,
-    CALIB,
-    AHRS,
-    ERROR    
+    IMU_INIT,
+    IMU_CALIB,
+    IMU_AHRS,
+    IMU_ERROR    
 } IMUTaskState_t;
 
 typedef struct IMUData
@@ -32,5 +34,6 @@ typedef struct IMUCalibrationData
 
 void vIMUCallback( void );
 void vIMUTask( void *pvParameters );
+FusionEuler *pGetEulerAngles( void );
 
 #endif

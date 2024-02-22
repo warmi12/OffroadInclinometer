@@ -363,7 +363,7 @@ void LCD_1IN28_Init(uint8_t Scan_dir)
     //Set the initialization register
     LCD_1IN28_InitReg();
 
-	LCD_1IN28_Clear(WHITE);
+	//LCD_1IN28_Clear(WHITE);
 	
 	DEV_SET_PWM(100);
 }

@@ -5,18 +5,17 @@
 #include "pico/stdlib.h"
 
 #include "IMUTask.h"
-#include "Fusion.h"
 #include "QMI8658.h"
 
-IMUTaskState_t IMUTaskState;
-IMUData_t IMUData;
-IMUCalibrationData_t IMUCalibrationData;
+static IMUTaskState_t IMUTaskState;
+static IMUData_t IMUData;
+static IMUCalibrationData_t IMUCalibrationData;
 
-SemaphoreHandle_t xIMUSemaphore = NULL;
+static SemaphoreHandle_t xIMUSemaphore = NULL;
 
-FusionAhrs ahrs;
-FusionOffset offset;
-const FusionAhrsSettings settings = {
+static FusionAhrs ahrs;
+static FusionOffset offset;
+static const FusionAhrsSettings settings = {
     .convention = FusionConventionEnu,
     .gain = 2.0f,
     .gyroscopeRange = 2000.0f, /* replace this with actual gyroscope range in degrees/s */
@@ -25,15 +24,15 @@ const FusionAhrsSettings settings = {
     .recoveryTriggerPeriod = 5 * SAMPLE_RATE, /* 5 seconds */
 };
 
-FusionVector gyroscope;
-FusionVector accelerometer;
-FusionEuler euler;
+static FusionVector gyroscope;
+static FusionVector accelerometer;
+static FusionEuler euler;
 
-static void vInit(void);
-static void vCalibration(void);
-static void vAHRS(void);
+static void vInit( void );
+static void vCalibration( void );
+static void vAHRS( void );
 
-static void vInit(void)
+static void vInit( void )
 {
     FusionOffsetInitialise(&offset, SAMPLE_RATE);
     FusionAhrsInitialise(&ahrs);
@@ -41,10 +40,10 @@ static void vInit(void)
 
     xIMUSemaphore = xSemaphoreCreateBinary();
 
-    IMUTaskState = CALIB;
+    IMUTaskState = IMU_CALIB;
 }
 
-static void vCalibration(void)
+static void vCalibration( void )
 {
     while(1)
     {
@@ -87,10 +86,12 @@ static void vCalibration(void)
             IMUCalibrationData.gyro[0], IMUCalibrationData.gyro[1], IMUCalibrationData.gyro[2] 
           );
     */
-    IMUTaskState = AHRS;
+    IMUTaskState = IMU_AHRS;
 }
 
-void vAHRS(void)
+unsigned int time = 0;
+
+static void vAHRS( void )
 {
     while(1)
     {
@@ -113,18 +114,18 @@ void vAHRS(void)
             euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
         }
 
-        /* 
-            DEBUG
-            TODO: DEBUG MAKRO!
-        if (IMUData.timestamp - time > 500U)
-        {
-            time = IMUData.timestamp;
-            uint core_num = get_core_num();
-            printf("Roll %0.1f, Pitch %0.1f, Yaw %0.1f, Core num: %d\n", 
-            euler.angle.roll, euler.angle.pitch, euler.angle.yaw, core_num
-            );
-        }
-        */
+        
+        //    DEBUG
+        //    TODO: DEBUG MAKRO!
+        // if (IMUData.timestamp - time > 500U)
+        // {
+        //     time = IMUData.timestamp;
+        //     uint core_num = get_core_num();
+        //     printf("Roll %0.1f, Pitch %0.1f, Yaw %0.1f, Core num: %d\n", 
+        //     euler.angle.roll, euler.angle.pitch, euler.angle.yaw, core_num
+        //     );
+        // }
+        
     }
 }
 
@@ -134,12 +135,17 @@ void vIMUCallback( void )
     {
        gpio_acknowledge_irq(24, GPIO_IRQ_EDGE_RISE);
        
-       if (IMUTaskState != INIT && IMUTaskState != ERROR)
+       if (IMUTaskState != IMU_INIT && IMUTaskState != IMU_ERROR)
        {
         xSemaphoreGiveFromISR( xIMUSemaphore, pdFALSE);
        }
     }
 } 
+
+FusionEuler *pGetEulerAngles( void )
+{
+    return &euler;
+}
 
 void vIMUTask( void *pvParameters )
 {
@@ -149,16 +155,16 @@ void vIMUTask( void *pvParameters )
     {
         switch (IMUTaskState)
         {
-        case INIT:
+        case IMU_INIT:
             vInit();
             break;
-        case CALIB:
+        case IMU_CALIB:
             vCalibration();
             break;
-        case AHRS:
+        case IMU_AHRS:
             vAHRS();
             break;
-        case ERROR:
+        case IMU_ERROR:
             break;
         default:
             break;

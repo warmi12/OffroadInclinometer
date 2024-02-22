@@ -22,21 +22,29 @@ pico_sdk_init()
 
 set(GLOBAL_DEFINES
     PICO_STACK_SIZE=4096
-    PICO_HEAP_SIZE=16384
+    #PICO_HEAP_SIZE=16384
 )
 
 add_executable(${CMAKE_PROJECT_NAME}
     ${CMAKE_SOURCE_DIR}/src/main.c
     ${CMAKE_SOURCE_DIR}/src/IMUTask/IMUTask.c
+    ${CMAKE_SOURCE_DIR}/src/DisplayTask/DisplayTask.c
+    ${CMAKE_SOURCE_DIR}/src/DisplayTask/LvglProcess.c
+    ${CMAKE_SOURCE_DIR}/src/DisplayTask/ImageData.c
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_SOURCE_DIR}/inc/IMUTask
+    ${CMAKE_SOURCE_DIR}/inc/DisplayTask
+    ${CMAKE_SOURCE_DIR}/inc/lvgl
+    ${CMAKE_SOURCE_DIR}/libs/lvgl/src
+    ${CMAKE_SOURCE_DIR}/inc/ImageData
+
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ${GLOBAL_DEFINES})
 target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall -Wextra)
-target_link_libraries(${CMAKE_PROJECT_NAME} FreeRTOS-Kernel FreeRTOS-Kernel-Heap4 FreeRTOS-Config Fusion LCD Config QMI8658 lvgl)
+target_link_libraries(${CMAKE_PROJECT_NAME} FreeRTOS-Kernel FreeRTOS-Kernel-Heap3 FreeRTOS-Config Fusion LCD Config QMI8658 lvgl)
 
 pico_enable_stdio_usb(${CMAKE_PROJECT_NAME} 1)
 pico_enable_stdio_uart(${CMAKE_PROJECT_NAME} 1)

@@ -2,4 +2,3 @@ build/
 libs/lvgl/bin
 libs/lvgl/src
 libs/lvgl/lvgl-subbuild
-.vscode

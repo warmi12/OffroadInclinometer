@@ -26,6 +26,9 @@
         "stdlib.h": "c",
         "imutask.h": "c",
         "fusion.h": "c",
-        "random": "c"
+        "random": "c",
+        "displaytask.h": "c",
+        "imagedata.h": "c",
+        "semphr.h": "c"
     }
 }

@@ -10,5 +10,4 @@ typedef enum
 
 void vDisplayTask( void *pvParameters );
 
-
 #endif

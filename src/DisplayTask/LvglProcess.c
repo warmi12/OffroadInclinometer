@@ -4,11 +4,22 @@
 
 #include "LvglProcess.h"
 #include "IMUTask.h"
-#include "ImageData.h"
+#include "IMGs.h"
 
 #define UNUSED(x) ((void)(x))
 #define DISP_HOR_RES 240
 #define DISP_VER_RES 240
+
+static bool RefreshIMUDataHandlerFlag = false;
+
+static FusionEuler actualEulerAngles;
+
+static lv_obj_t *indicatorLeft;
+static lv_obj_t *indicatorRight;
+static lv_obj_t *backgroundImg;
+static lv_obj_t *frontCarImg;
+static lv_obj_t *sideCarImg;
+static lv_obj_t *pTxt;
 
 static struct repeating_timer xLvglTimer;
 static struct repeating_timer xIMUTimer;
@@ -20,7 +31,9 @@ static lv_color_t xLvglDispBuf1[ DISP_HOR_RES * (DISP_VER_RES/2) ];
 static lv_disp_drv_t xLvglDispDrv;
 
 static bool bLvglTimerCallback( struct repeating_timer *t );
-static bool bIMUTimerCallback( struct repeating_timer *t );
+static bool bRefreshIMUDataTimerCallback( struct repeating_timer *t );
+static void vSetRefreshIMUDataHandlerFlag();
+static void vUnsetRefreshIMUDataHandlerFlag();
 
 static void vDispFlushCb( lv_disp_drv_t * disp, const lv_area_t * area, lv_color_t * color_p );
 static void vDmaHandler( void );
@@ -28,7 +41,7 @@ static void vDmaHandler( void );
 void vLvglInit( void )
 {
     add_repeating_timer_ms( 5, bLvglTimerCallback, NULL, &xLvglTimer );
-    add_repeating_timer_ms( 500, bIMUTimerCallback, NULL, &xIMUTimer );
+    add_repeating_timer_ms( 500, bRefreshIMUDataTimerCallback, NULL, &xIMUTimer );
 
     lv_init();
 
@@ -45,31 +58,21 @@ void vLvglInit( void )
     irq_set_enabled( DMA_IRQ_0, true );
 }
 
-static void anim_x_cb(void * var, int32_t v)
-{
-    lv_obj_set_x(var, v);
-}
-
-static void anim_size_cb(void * var, int32_t v)
-{
-    lv_obj_set_size(var, v, v);
-}
-
 void vWidgetsInit( void )
 {
     pLabel = lv_label_create(lv_scr_act());
 
     /* IMAGE */
+    LV_IMG_DECLARE(background);
+    LV_IMG_DECLARE(sideCar);
+    LV_IMG_DECLARE(frontCar);
 
-    LV_IMG_DECLARE(pic);
-    //lv_obj_t *img1 = lv_img_create(tile1);
-    lv_obj_t *img1 = lv_img_create(pLabel);
-    lv_img_set_src(img1, &pic);
-    lv_obj_set_pos(img1, 0, 0);
+    backgroundImg = lv_img_create(pLabel);
+    lv_img_set_src(backgroundImg, &background);
+    lv_obj_set_pos(backgroundImg, 0, 0);
 
     /* INDICATORS */
-
-    lv_obj_t * indicatorLeft = lv_arc_create(lv_scr_act());
+    indicatorLeft = lv_arc_create(lv_scr_act());
     
     lv_obj_set_size(indicatorLeft, 170, 170);
     lv_obj_remove_style(indicatorLeft, NULL, LV_PART_KNOB);   /*Be sure the knob is not displayed*/
@@ -91,8 +94,7 @@ void vWidgetsInit( void )
     lv_anim_set_values(&indicatorLeftAnim, 0, 100);
     lv_anim_start(&indicatorLeftAnim);
 
-
-    lv_obj_t * indicatorRight = lv_arc_create(lv_scr_act());
+    indicatorRight = lv_arc_create(lv_scr_act());
     
     lv_obj_set_size(indicatorRight, 170, 170);
     lv_obj_remove_style(indicatorRight, NULL, LV_PART_KNOB);   /*Be sure the knob is not displayed*/
@@ -107,15 +109,130 @@ void vWidgetsInit( void )
     lv_arc_set_value(indicatorRight, 75);
     lv_arc_set_mode(indicatorRight, LV_ARC_MODE_SYMMETRICAL);
     
-   //lv_obj_add_event_cb(arc, value_changed_event_cb, LV_EVENT_VALUE_CHANGED, label);
-
-    //lv_obj_send_event(arc, LV_EVENT_VALUE_CHANGED, NULL);
     lv_anim_t indicatorRightAnim;
     lv_anim_init(&indicatorRightAnim);
     lv_anim_set_var(&indicatorRightAnim, indicatorRight);
-    //lv_anim_set_exec_cb(&a, set_angle);
     lv_anim_set_values(&indicatorRightAnim, 0, 100);
     lv_anim_start(&indicatorRightAnim);
+
+    pTxt = lv_label_create(backgroundImg);
+    lv_label_set_text(pTxt, "50");
+    lv_obj_set_style_text_color(backgroundImg, lv_color_hex(0xffffff), LV_PART_MAIN);
+    lv_obj_align(pTxt, LV_ALIGN_TOP_MID, 0, 0);
+
+    frontCarImg = lv_img_create(backgroundImg);
+    lv_img_set_src(frontCarImg, &frontCar);
+    lv_obj_align(frontCarImg, LV_ALIGN_CENTER, -40, 0);
+
+    sideCarImg = lv_img_create(backgroundImg);
+    lv_img_set_src(sideCarImg, &sideCar);
+    lv_obj_align(sideCarImg, LV_ALIGN_CENTER, 40, 0);
+}
+
+//DEBUG
+//int counter = 0;
+//bool flag = false;
+
+void vRefreshIMUDataHandler( void )
+{
+    if (RefreshIMUDataHandlerFlag)
+    {
+        if( xDisplaySemaphore != NULL )
+        {
+            if( xSemaphoreTake( xDisplaySemaphore, (WAIT_TIMEOUT) / portTICK_PERIOD_MS ) == pdTRUE )
+            {
+                const FusionEuler *angles = pGetEulerAngles();
+                actualEulerAngles.angle.roll = angles->angle.roll;
+                actualEulerAngles.angle.pitch = angles->angle.pitch;
+                actualEulerAngles.angle.yaw = angles->angle.yaw;
+                xSemaphoreGive( xDisplaySemaphore );
+            }
+
+            lv_arc_set_value(indicatorLeft, 50 + actualEulerAngles.angle.roll);
+            lv_arc_set_value(indicatorRight, 50 + actualEulerAngles.angle.pitch );
+            lv_img_set_angle(sideCarImg, (uint16_t)actualEulerAngles.angle.roll * 10);
+            lv_img_set_angle(frontCarImg, (uint16_t)actualEulerAngles.angle.pitch * 10);
+
+            //DEBUG!!!
+            // lv_arc_set_value(indicatorLeft, counter);
+            // lv_arc_set_value(indicatorRight, counter);
+
+            // if ( counter <= 5 )
+            // {
+            //     lv_obj_set_style_arc_color(indicatorLeft, lv_color_hex(0xff0000), LV_PART_INDICATOR);
+            //     lv_obj_set_style_arc_color(indicatorRight, lv_color_hex(0xff0000), LV_PART_INDICATOR);
+            //     lv_obj_set_style_text_color(backgroundImg, lv_color_hex(0xff0000), LV_PART_MAIN);
+            // }
+            // else if ( counter <= 15 && counter > 5 )
+            // {
+            //     lv_obj_set_style_arc_color(indicatorLeft, lv_color_hex(0xff5757), LV_PART_INDICATOR);
+            //     lv_obj_set_style_arc_color(indicatorRight, lv_color_hex(0xff5757), LV_PART_INDICATOR);
+            //     lv_obj_set_style_text_color(backgroundImg, lv_color_hex(0xff5757), LV_PART_MAIN);
+            // }
+            // else if ( counter <= 25 && counter > 15 )
+            // {
+            //     lv_obj_set_style_arc_color(indicatorLeft, lv_color_hex(0xff7a28), LV_PART_INDICATOR);
+            //     lv_obj_set_style_arc_color(indicatorRight, lv_color_hex(0xff7a28), LV_PART_INDICATOR);
+            //     lv_obj_set_style_text_color(backgroundImg, lv_color_hex(0xff7a28), LV_PART_MAIN);
+            // }
+            // else if ( counter <= 70 && counter > 25 )
+            // {
+            //     lv_obj_set_style_arc_color(indicatorLeft, lv_color_hex(0x00ff00), LV_PART_INDICATOR);
+            //     lv_obj_set_style_arc_color(indicatorRight, lv_color_hex(0x00ff00), LV_PART_INDICATOR);
+            //     lv_obj_set_style_text_color(backgroundImg, lv_color_hex(0x00ff00), LV_PART_MAIN);
+            // }
+            // else if ( counter <= 80 && counter > 70 )
+            // {
+            //     lv_obj_set_style_arc_color(indicatorLeft, lv_color_hex(0xff7a28), LV_PART_INDICATOR);
+            //     lv_obj_set_style_arc_color(indicatorRight, lv_color_hex(0xff7a28), LV_PART_INDICATOR);
+            //     lv_obj_set_style_text_color(backgroundImg, lv_color_hex(0xff7a28), LV_PART_MAIN);
+            // }
+            // else if ( counter <= 90 && counter > 80 )
+            // {
+            //     lv_obj_set_style_arc_color(indicatorLeft, lv_color_hex(0xff5757), LV_PART_INDICATOR);
+            //     lv_obj_set_style_arc_color(indicatorRight, lv_color_hex(0xff5757), LV_PART_INDICATOR);
+            //     lv_obj_set_style_text_color(backgroundImg, lv_color_hex(0xff5757), LV_PART_MAIN);
+            // }
+            // else if ( counter <= 100 && counter > 90 )
+            // {
+            //     lv_obj_set_style_arc_color(indicatorLeft, lv_color_hex(0xff0000), LV_PART_INDICATOR);
+            //     lv_obj_set_style_arc_color(indicatorRight, lv_color_hex(0xff0000), LV_PART_INDICATOR);
+            //     lv_obj_set_style_text_color(backgroundImg, lv_color_hex(0xff0000), LV_PART_MAIN);
+            // }
+
+            // lv_img_set_angle(sideCarImg, counter * 10);
+            // lv_img_set_angle(frontCarImg, counter * 10);
+
+            // if(counter<100 && flag == false)
+            // {
+            //     counter++;
+            // }
+            // else if(counter == 100 && flag == false)
+            // {
+            //     flag = true;
+            // }
+            // else if(counter > 0 && flag == true)
+            // {
+            //     counter--;
+            // }
+            // else if(counter == 0 && flag == true)
+            // {
+            //     flag = false;
+            // }
+            
+            vUnsetRefreshIMUDataHandlerFlag();
+        }
+    }
+}
+
+static void vSetRefreshIMUDataHandlerFlag()
+{
+    RefreshIMUDataHandlerFlag = true;
+}
+
+static void vUnsetRefreshIMUDataHandlerFlag()
+{
+    RefreshIMUDataHandlerFlag = false;
 }
 
 static bool bLvglTimerCallback( struct repeating_timer *t )
@@ -126,17 +243,12 @@ static bool bLvglTimerCallback( struct repeating_timer *t )
     return true;
 }
 
-static bool bIMUTimerCallback( struct repeating_timer *t )
+static bool bRefreshIMUDataTimerCallback( struct repeating_timer *t )
 {
     UNUSED( t );
 
-    //if(MUTEX/SEM)?
-    //get_eulerdata();
-    char label_text[64];
-    const FusionEuler *angles = pGetEulerAngles();
-    sprintf(label_text,"%4.1f",angles->angle.roll);
-    lv_label_set_text(pLabel,label_text);
-    
+    vSetRefreshIMUDataHandlerFlag();
+
     return true;
 }
 

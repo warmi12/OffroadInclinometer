@@ -19,7 +19,7 @@ static void prvSetupHardware( void );
 
 int main( void )
 {
-    prvSetupHardware();
+	    prvSetupHardware();
 
 	xTaskCreate( vIMUTask,				/* The function that implements the task. */
 				"IMUTask", 							/* The text name assigned to the task - for debug only as it is not used by the kernel. */

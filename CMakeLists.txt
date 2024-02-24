@@ -30,7 +30,9 @@ add_executable(${CMAKE_PROJECT_NAME}
     ${CMAKE_SOURCE_DIR}/src/IMUTask/IMUTask.c
     ${CMAKE_SOURCE_DIR}/src/DisplayTask/DisplayTask.c
     ${CMAKE_SOURCE_DIR}/src/DisplayTask/LvglProcess.c
-    ${CMAKE_SOURCE_DIR}/src/DisplayTask/ImageData.c
+    ${CMAKE_SOURCE_DIR}/src/DisplayTask/IMGs/BackgroundImg.c
+    ${CMAKE_SOURCE_DIR}/src/DisplayTask/IMGs/FrontCarImg.c
+    ${CMAKE_SOURCE_DIR}/src/DisplayTask/IMGs/SideCarImg.c
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
@@ -38,8 +40,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_SOURCE_DIR}/inc/DisplayTask
     ${CMAKE_SOURCE_DIR}/inc/lvgl
     ${CMAKE_SOURCE_DIR}/libs/lvgl/src
-    ${CMAKE_SOURCE_DIR}/inc/ImageData
-
+    ${CMAKE_SOURCE_DIR}/inc/IMGs
 )
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ${GLOBAL_DEFINES})

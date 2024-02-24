@@ -25,8 +25,9 @@ static void vLoop( void )
     while(1)
     {
         lv_task_handler();
+        vRefreshIMUDataHandler();
         vTaskDelay( 5 / portTICK_PERIOD_MS );
-
+        
         // printf("%d, %d\n", get_core_num(), time);
         // time++;
         // vTaskDelay(500 / portTICK_PERIOD_MS);

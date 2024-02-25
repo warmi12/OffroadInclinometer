@@ -29,6 +29,7 @@
         "random": "c",
         "displaytask.h": "c",
         "imagedata.h": "c",
-        "semphr.h": "c"
+        "semphr.h": "c",
+        "limits": "c"
     }
 }

@@ -34,6 +34,16 @@ static void vLoop( void )
     }
 }
 
+void vChagneScreen( void )
+{
+    vChangeToMainScreen();
+}
+
+void vSetCalibrationValue( float rollCalibVal, float pitchCalibVal )
+{
+    vSetCalibVal( rollCalibVal, pitchCalibVal);
+}
+
 void vDisplayTask( void *pvParameters ) 
 {
     (void) pvParameters;

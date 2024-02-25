@@ -9,5 +9,7 @@ typedef enum
 } DisplayTaskState_t;
 
 void vDisplayTask( void *pvParameters );
+void vChagneScreen( void );
+void vSetCalibrationValue( float rollCalibVal, float pitchCalibVal );
 
 #endif

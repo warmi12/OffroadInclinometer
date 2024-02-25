@@ -10,5 +10,7 @@ extern SemaphoreHandle_t xDisplaySemaphore;
 void vLvglInit( void );
 void vWidgetsInit( void );
 void vRefreshIMUDataHandler();
+void vChangeToMainScreen();
+void vSetCalibVal( float rollVal, float pitchVal );
 
 #endif

@@ -51,7 +51,7 @@ static void vDmaHandler( void );
 void vLvglInit( void )
 {
     add_repeating_timer_ms( 5, bLvglTimerCallback, NULL, &xLvglTimer );
-    add_repeating_timer_ms( 500, bRefreshIMUDataTimerCallback, NULL, &xIMUTimer );
+    add_repeating_timer_ms( 50, bRefreshIMUDataTimerCallback, NULL, &xIMUTimer );
 
     lv_init();
 
@@ -160,12 +160,10 @@ void vWidgetsInit( void )
     lv_anim_start(&indicatorRightAnim);
 
     txtRollTile2 = lv_label_create(backgroundImg);
-    lv_label_set_text(txtRollTile2, "50");
     lv_obj_set_style_text_color(backgroundImg, lv_color_hex(0xffffff), LV_PART_MAIN);
-    lv_obj_align(txtRollTile2, LV_ALIGN_TOP_MID, 0, 0);
+    lv_obj_align(txtRollTile2, LV_ALIGN_TOP_MID, 0, 20);
 
     txtPitchTile2 = lv_label_create(backgroundImg);
-    lv_label_set_text(txtPitchTile2, "50");
     lv_obj_set_style_text_color(backgroundImg, lv_color_hex(0xffffff), LV_PART_MAIN);
     lv_obj_align(txtPitchTile2, LV_ALIGN_BOTTOM_MID, 0, 0);
 
@@ -203,15 +201,25 @@ void vRefreshIMUDataHandler( void )
 
             lv_arc_set_value(indicatorLeft, 50 + actualEulerAngles.angle.roll);
             lv_arc_set_value(indicatorRight, 50 + actualEulerAngles.angle.pitch );
-            lv_img_set_angle(sideCarImg, (int16_t)actualEulerAngles.angle.pitch * 10);
-            lv_img_set_angle(frontCarImg, (int16_t)actualEulerAngles.angle.roll * 10);
+            lv_img_set_angle(sideCarImg, (int16_t)(actualEulerAngles.angle.pitch * 10));
+            lv_img_set_angle(frontCarImg, (int16_t)(actualEulerAngles.angle.roll * 10));
             
 
             char rollText[5];
             char pichText[5];
 
-            sprintf(rollText,"%0.1f\n", actualEulerAngles.angle.roll);
-            sprintf(pichText,"%0.1f\n", actualEulerAngles.angle.pitch);
+            if (actualEulerAngles.angle.roll < 0.0f && actualEulerAngles.angle.roll > -1.0f)
+            {
+                actualEulerAngles.angle.roll *= -1.0f;
+            }
+
+            if (actualEulerAngles.angle.pitch < 0.0f && actualEulerAngles.angle.pitch > -1.0f)
+            {
+                actualEulerAngles.angle.pitch *= -1.0f;
+            }
+
+            sprintf(rollText,"%0.0f%s\n", actualEulerAngles.angle.roll,"°");
+            sprintf(pichText,"%0.0f%s\n", actualEulerAngles.angle.pitch,"°");
 
             lv_label_set_text(txtRollTile2, rollText);
             lv_label_set_text(txtPitchTile2, pichText);

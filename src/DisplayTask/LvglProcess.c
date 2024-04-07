@@ -195,9 +195,19 @@ void vRefreshIMUDataHandler( void )
                 xSemaphoreGive( xDisplaySemaphore );
             }
 
-            actualEulerAngles.angle.roll -= rollCalibVal;
+            if (actualEulerAngles.angle.roll > 0.0f)
+            {
+                actualEulerAngles.angle.roll -= rollCalibVal;
+            }
+            else
+            {
+                actualEulerAngles.angle.roll += rollCalibVal;
+            }
+            
+            actualEulerAngles.angle.roll *= -1.0f;
+
             actualEulerAngles.angle.pitch -= pitchCalibVal;
-            actualEulerAngles.angle.pitch *= -1.0f;
+            //actualEulerAngles.angle.pitch *= -1.0f;
 
             lv_arc_set_value(indicatorLeft, 50 + actualEulerAngles.angle.roll);
             lv_arc_set_value(indicatorRight, 50 + actualEulerAngles.angle.pitch );

@@ -7,7 +7,7 @@
 #include "IMUTask.h"
 #include "DisplayTask.h"
 #include "QMI8658.h"
-
+#include "string.h"
 #define MAX(a,b) ((a > b) ? (a) : (b))
 #define MIN(a,b) ((a < b) ? (a) : (b))
 
@@ -23,12 +23,21 @@ static FusionOffset offset;
 static FusionAhrsFlags flags;
 static const FusionAhrsSettings settings = {
     .convention = FusionConventionEnu,
-    .gain = 2.0f,
+    .gain = 0.5f,
     .gyroscopeRange = 512.0f, /* replace this with actual gyroscope range in degrees/s */
     .accelerationRejection = 10.0f,
     .magneticRejection = 10.0f,
-    .recoveryTriggerPeriod = 5 * SAMPLE_RATE, /* 5 seconds */
+    .recoveryTriggerPeriod = 1 * SAMPLE_RATE, /* 5 seconds */
 };
+
+typedef union {
+    float float_val;
+    uint8_t bytes[4];
+} unia;
+
+uint8_t buffer[16];
+
+unia float_to_bytes;
 
 static FusionVector gyroscope;
 static FusionVector accelerometer;
@@ -49,19 +58,19 @@ static void vInit( void )
     FusionAhrsInitialise(&ahrs);
     FusionAhrsSetSettings(&ahrs, &settings);
 
-    xIMUCallbackSemaphore = xSemaphoreCreateBinary();
-    xDisplaySemaphore = xSemaphoreCreateMutex();
+    // xIMUCallbackSemaphore = xSemaphoreCreateBinary();
+    // xDisplaySemaphore = xSemaphoreCreateMutex();
 
     IMUTaskState = IMU_CALIB;
 }
 
 static void vCalibration( void )
 {
-    stationarySamplesCounter = 0;
-    while(1)
-    {
-        if( xSemaphoreTake( xIMUCallbackSemaphore, WAIT_TIMEOUT / portTICK_PERIOD_MS ) == pdTRUE )
-        {
+   // stationarySamplesCounter = 0;
+  //  while(1)
+   // {
+       // if( xSemaphoreTake( xIMUCallbackSemaphore, WAIT_TIMEOUT / portTICK_PERIOD_MS ) == pdTRUE )
+      //  {
             QMI8658_read_xyz(IMUData.acc, IMUData.gyro, &IMUData.timestamp);
 
             // IMUCalibrationData.acc[0] += IMUData.acc[0];
@@ -71,6 +80,16 @@ static void vCalibration( void )
             IMUCalibrationData.gyro[0] += IMUData.gyro[0];
             IMUCalibrationData.gyro[1] += IMUData.gyro[1];
             IMUCalibrationData.gyro[2] += IMUData.gyro[2];
+            
+            gyroscope.array[0] = IMUData.gyro[0];
+            gyroscope.array[1] = IMUData.gyro[1];
+            gyroscope.array[2] = IMUData.gyro[2];
+
+            accelerometer.array[0] = IMUData.acc[0];
+            accelerometer.array[1] = IMUData.acc[1];
+            accelerometer.array[2] = IMUData.acc[2];
+
+            FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, IMUData.deltaTime);
 
             if (IMUCalibrationData.sampleCounter >= CALIB_TIME_MS) 
             {
@@ -81,56 +100,58 @@ static void vCalibration( void )
                 IMUCalibrationData.gyro[0] /= CALIB_TIME_MS;
                 IMUCalibrationData.gyro[1] /= CALIB_TIME_MS;
                 IMUCalibrationData.gyro[2] /= CALIB_TIME_MS;
-                break;
+                //break;
+
+                IMUTaskState = IMU_AHRS;
             }
             else
             {
                 IMUCalibrationData.sampleCounter++;
             }
-        }
-    }
+        //}
+    //}
 
-    while(1)
-    {
-         if ( xSemaphoreTake( xIMUCallbackSemaphore, WAIT_TIMEOUT / portTICK_PERIOD_MS ) == pdTRUE )
-        {
-            QMI8658_read_xyz(IMUData.acc, IMUData.gyro, &IMUData.timestamp);
+    // while(1)
+    // {
+    //     if ( xSemaphoreTake( xIMUCallbackSemaphore, WAIT_TIMEOUT / portTICK_PERIOD_MS ) == pdTRUE )
+    //     {
+    //         QMI8658_read_xyz(IMUData.acc, IMUData.gyro, &IMUData.timestamp);
 
-            IMUData.deltaTime = (float) (IMUData.timestamp - IMUData.previousTimestamp) / 1000.0f;
-            IMUData.previousTimestamp = IMUData.timestamp;
+    //         IMUData.deltaTime = (float) (IMUData.timestamp - IMUData.previousTimestamp) / 2000.0f;
+    //         IMUData.previousTimestamp = IMUData.timestamp;
 
-            IMUData.gyro[0] -= IMUCalibrationData.gyro[0];
-            IMUData.gyro[1] -= IMUCalibrationData.gyro[1];
-            IMUData.gyro[2] -= IMUCalibrationData.gyro[2];
+    //         IMUData.gyro[0] -= IMUCalibrationData.gyro[0];
+    //         IMUData.gyro[1] -= IMUCalibrationData.gyro[1];
+    //         IMUData.gyro[2] -= IMUCalibrationData.gyro[2];
 
-            gyroscope.array[0] = IMUData.gyro[2];
-            gyroscope.array[1] = IMUData.gyro[1];
-            gyroscope.array[2] = IMUData.gyro[0];
+    //         gyroscope.array[0] = IMUData.gyro[0];
+    //         gyroscope.array[1] = IMUData.gyro[1];
+    //         gyroscope.array[2] = IMUData.gyro[2];
 
-            IMUData.acc[0] *=-1.0f;
+    //        // IMUData.acc[0] *=-1.0f;
 
-            accelerometer.array[0] = IMUData.acc[2];
-            accelerometer.array[1] = IMUData.acc[1];
-            accelerometer.array[2] = IMUData.acc[0];
+    //         accelerometer.array[0] = IMUData.acc[0];
+    //         accelerometer.array[1] = IMUData.acc[1];
+    //         accelerometer.array[2] = IMUData.acc[2];
 
-            FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, IMUData.deltaTime);
+    //         FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, IMUData.deltaTime);
             
-            if( xSemaphoreTake( xDisplaySemaphore, 1) == pdTRUE )
-            {
-                euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
-                xSemaphoreGive( xDisplaySemaphore );
-            }
+    //         if( xSemaphoreTake( xDisplaySemaphore, 1) == pdTRUE )
+    //         {
+    //             euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
+    //             xSemaphoreGive( xDisplaySemaphore );
+    //         }
 
-            //printf("euler %0.1f %0.1f\n", euler.angle.roll, euler.angle.pitch);
+    //         //printf("euler %0.1f %0.1f\n", euler.angle.roll, euler.angle.pitch);
 
-            if ( bIsStationary() )
-            {
-                vChagneScreen();
-                vSetCalibrationValue( stationaryMin[0], stationaryMin[1] );
-                break;
-            }
-        }
-    }
+    //         if ( bIsStationary() )
+    //         {
+    //             vChagneScreen();
+    //             vSetCalibrationValue( stationaryMin[0], stationaryMin[1] );
+    //             break;
+    //         }
+    //     }
+    // }
     
     //    DEBUG!
     //    TODO: DEBUG MAKRO!
@@ -140,47 +161,131 @@ static void vCalibration( void )
     //        IMUCalibrationData.gyro[0], IMUCalibrationData.gyro[1], IMUCalibrationData.gyro[2] 
     //      );
 
-    IMUTaskState = IMU_AHRS;
+   // IMUTaskState = IMU_AHRS;
 }
 
 //DEBUG
 unsigned int time = 0;
 
 static void vAHRS( void )
-{
-    while(1)
-    {
-        if ( xSemaphoreTake( xIMUCallbackSemaphore, WAIT_TIMEOUT / portTICK_PERIOD_MS ) == pdTRUE )
-        {
+ {
+//     while(1)
+//     {
+//         if ( xSemaphoreTake( xIMUCallbackSemaphore, WAIT_TIMEOUT / portTICK_PERIOD_MS ) == pdTRUE )
+//         {
+            //unsigned long start_time = time_us_64();
+
             QMI8658_read_xyz(IMUData.acc, IMUData.gyro, &IMUData.timestamp);
 
-            IMUData.deltaTime = (float) (IMUData.timestamp - IMUData.previousTimestamp) / 1000.0f;
+            // unsigned long end_time = time_us_64(); 
+            // unsigned long execution_time = (end_time - start_time);
+
+            // if (IMUData.timestamp - time > 500U){
+            //     time = IMUData.timestamp;
+            //     printf("TIME: %ld\n", execution_time);
+            // }
+
+            IMUData.deltaTime = (float) (IMUData.timestamp - IMUData.previousTimestamp) / 2000.0f;
             IMUData.previousTimestamp = IMUData.timestamp;
 
             IMUData.gyro[0] -= IMUCalibrationData.gyro[0];
             IMUData.gyro[1] -= IMUCalibrationData.gyro[1];
             IMUData.gyro[2] -= IMUCalibrationData.gyro[2];
 
-            gyroscope.array[0] = IMUData.gyro[2];
+            gyroscope.array[0] = IMUData.gyro[0];
             gyroscope.array[1] = IMUData.gyro[1];
-            gyroscope.array[2] = IMUData.gyro[0];
+            gyroscope.array[2] = IMUData.gyro[2];
 
-            IMUData.acc[0] *=-1.0f;
+           // IMUData.acc[0] *=-1.0f;
 
-            accelerometer.array[0] = IMUData.acc[2];
+            accelerometer.array[0] = IMUData.acc[0];
             accelerometer.array[1] = IMUData.acc[1];
-            accelerometer.array[2] = IMUData.acc[0];
+            accelerometer.array[2] = IMUData.acc[2];
 
             FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, IMUData.deltaTime);
             
-            if( xSemaphoreTake( xDisplaySemaphore, 1) == pdTRUE )
+            // if( xSemaphoreTake( xDisplaySemaphore, 1) == pdTRUE )
+            // {
+            //     euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
+            //     //euler.angle.roll -= stationaryMin[0];
+            //     // euler.angle.pitch -= stationaryMin[1];
+            //     xSemaphoreGive( xDisplaySemaphore );
+            // }
+
+
+            
+
+    //    }
+
+            if (IMUData.timestamp - time > (2 * 100U))
             {
+                int buffer_counter = 0;
+
+                time = IMUData.timestamp;
+
                 euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
-                //euler.angle.roll -= stationaryMin[0];
-                // euler.angle.pitch -= stationaryMin[1];
-                xSemaphoreGive( xDisplaySemaphore );
+
+                float_to_bytes.float_val=euler.angle.roll;
+                buffer[buffer_counter] = 0xAA;
+                buffer_counter++;
+                buffer[buffer_counter] = 0xAA;
+                buffer_counter++;
+
+                buffer[buffer_counter] = float_to_bytes.bytes[0];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[1];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[2];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[3];
+                buffer_counter++;
+
+                float_to_bytes.float_val=euler.angle.pitch;
+
+                buffer[buffer_counter] = float_to_bytes.bytes[0];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[1];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[2];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[3];
+                buffer_counter++;
+
+                float_to_bytes.float_val=euler.angle.yaw;
+
+                buffer[buffer_counter] = float_to_bytes.bytes[0];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[1];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[2];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[3];
+                buffer_counter++;
+
+                int counter = 0;
+                uint8_t crc = 0;
+                while (counter < buffer_counter)
+                {
+                    crc ^=  buffer[counter];
+                    counter++;
+                }
+
+                
+                buffer[buffer_counter] = 0x00;
+                buffer_counter++;
+                buffer[buffer_counter] = (crc & 0xFF);
+                buffer_counter++;
+
+                counter = 0;
+
+                while (counter < buffer_counter)
+                {
+                    putchar_raw(buffer[counter]);
+                    counter++;
+                }
+
+                memset(&buffer,0,sizeof(buffer));
             }
-        }
 
         
         //    DEBUG
@@ -195,12 +300,12 @@ static void vAHRS( void )
         //     );
         // }
         
-    }
+   // }
 }
 
 static bool bIsStationary( void )
 {
-    if ( stationarySamplesCounter < 3000 )
+    if ( stationarySamplesCounter < 6000U )
     {
         stationaryMin[0]=MIN(stationaryMin[0],(euler.angle.roll));
         stationaryMax[0]=MAX(stationaryMax[0],(euler.angle.roll));
@@ -218,7 +323,7 @@ static bool bIsStationary( void )
 
          //printf("VALUES: %0.1f, %0.1f, %0.1f, %0.1f\n", stationaryMax[0], stationaryMin[0], stationaryMax[1], stationaryMin[1]);
 
-         if ( (stationaryMax[0] - stationaryMin[0] < 1.0f) && (stationaryMax[1] - stationaryMin[1] < 1.0f) && euler.angle.roll < 170.0f)
+         if ( (stationaryMax[0] - stationaryMin[0] < 0.3f) && (stationaryMax[1] - stationaryMin[1] < 0.3f) /*&& euler.angle.roll < 170.0f*/)
          {
             return true;
          }
@@ -240,10 +345,18 @@ void vIMUCallback( void )
     {
        gpio_acknowledge_irq(24, GPIO_IRQ_EDGE_RISE);
        
-       if (IMUTaskState != IMU_INIT && IMUTaskState != IMU_ERROR)
-       {
-        xSemaphoreGiveFromISR( xIMUCallbackSemaphore, pdFALSE);
-       }
+    //    if (IMUTaskState != IMU_INIT && IMUTaskState != IMU_ERROR)
+    //    {
+    //     xSemaphoreGiveFromISR( xIMUCallbackSemaphore, pdFALSE);
+    //    }
+        if  ( IMUTaskState == IMU_CALIB )
+        {
+            vCalibration();
+        } 
+        else if (IMUTaskState == IMU_AHRS)
+        {
+            vAHRS();
+        }
     }
 } 
 
@@ -264,10 +377,10 @@ void vIMUTask( void *pvParameters )
             vInit();
             break;
         case IMU_CALIB:
-            vCalibration();
+            //vCalibration();
             break;
         case IMU_AHRS:
-            vAHRS();
+            //vAHRS();
             break;
         case IMU_ERROR:
             vTaskDelay( 500 / portTICK_PERIOD_MS );

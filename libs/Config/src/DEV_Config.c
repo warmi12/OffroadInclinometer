@@ -201,7 +201,7 @@ uint8_t DEV_Module_Init(void)
     channel_config_set_transfer_data_size(&c, DMA_SIZE_8); 
     channel_config_set_dreq(&c, spi_get_dreq(LCD_SPI_PORT, true));
     // I2C Config
-    i2c_init(SENSOR_I2C_PORT, 400 * 1000);
+    i2c_init(SENSOR_I2C_PORT, 1000 * 1000);
     gpio_set_function(DEV_SDA_PIN, GPIO_FUNC_I2C);
     gpio_set_function(DEV_SCL_PIN, GPIO_FUNC_I2C);
     gpio_pull_up(DEV_SDA_PIN);

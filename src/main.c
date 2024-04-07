@@ -19,23 +19,25 @@ static void prvSetupHardware( void );
 
 int main( void )
 {
-	    prvSetupHardware();
+	prvSetupHardware();
 
-	xTaskCreate( vIMUTask,				/* The function that implements the task. */
-				"IMUTask", 							/* The text name assigned to the task - for debug only as it is not used by the kernel. */
-				configMINIMAL_STACK_SIZE * 4, 			/* The size of the stack to allocate to the task. */
-				NULL, 								/* The parameter passed to the task - not used in this case. */
-				IMU_TASK_PRIORITY, 	/* The priority assigned to the task. */
-				NULL );								/* The task handle is not required, so NULL is passed. */
+	vIMUTask(NULL);
 
-	xTaskCreate( vDisplayTask,				/* The function that implements the task. */
-				"DisplayTask", 							/* The text name assigned to the task - for debug only as it is not used by the kernel. */
-				configMINIMAL_STACK_SIZE * 4, 			/* The size of the stack to allocate to the task. */
-				NULL, 								/* The parameter passed to the task - not used in this case. */
-				DISPLAY_TASK_PRIORITY, 	/* The priority assigned to the task. */
-				NULL );								/* The task handle is not required, so NULL is passed. */
+	// xTaskCreate( vIMUTask,				/* The function that implements the task. */
+	// 			"IMUTask", 							/* The text name assigned to the task - for debug only as it is not used by the kernel. */
+	// 			configMINIMAL_STACK_SIZE * 4, 			/* The size of the stack to allocate to the task. */
+	// 			NULL, 								/* The parameter passed to the task - not used in this case. */
+	// 			IMU_TASK_PRIORITY, 	/* The priority assigned to the task. */
+	// 			NULL );								/* The task handle is not required, so NULL is passed. */
 
-	vTaskStartScheduler();
+	// xTaskCreate( vDisplayTask,				/* The function that implements the task. */
+	// 			"DisplayTask", 							/* The text name assigned to the task - for debug only as it is not used by the kernel. */
+	// 			configMINIMAL_STACK_SIZE * 4, 			/* The size of the stack to allocate to the task. */
+	// 			NULL, 								/* The parameter passed to the task - not used in this case. */
+	// 			DISPLAY_TASK_PRIORITY, 	/* The priority assigned to the task. */
+	// 			NULL );								/* The task handle is not required, so NULL is passed. */
+
+	//vTaskStartScheduler();
 
     return 0;
 }

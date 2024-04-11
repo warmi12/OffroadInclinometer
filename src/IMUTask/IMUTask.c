@@ -23,11 +23,11 @@ static FusionOffset offset;
 static FusionAhrsFlags flags;
 static const FusionAhrsSettings settings = {
     .convention = FusionConventionEnu,
-    .gain = 0.5f,
+    .gain = 0.25f,
     .gyroscopeRange = 512.0f, /* replace this with actual gyroscope range in degrees/s */
-    .accelerationRejection = 10.0f,
+    .accelerationRejection = 3.0f,
     .magneticRejection = 10.0f,
-    .recoveryTriggerPeriod = 1 * SAMPLE_RATE, /* 5 seconds */
+    .recoveryTriggerPeriod = 3 * SAMPLE_RATE, /* 5 seconds */
 };
 
 typedef union {
@@ -81,15 +81,15 @@ static void vCalibration( void )
             IMUCalibrationData.gyro[1] += IMUData.gyro[1];
             IMUCalibrationData.gyro[2] += IMUData.gyro[2];
             
-            gyroscope.array[0] = IMUData.gyro[0];
-            gyroscope.array[1] = IMUData.gyro[1];
-            gyroscope.array[2] = IMUData.gyro[2];
+            // gyroscope.array[0] = IMUData.gyro[0];
+            // gyroscope.array[1] = IMUData.gyro[1];
+            // gyroscope.array[2] = IMUData.gyro[2];
 
-            accelerometer.array[0] = IMUData.acc[0];
-            accelerometer.array[1] = IMUData.acc[1];
-            accelerometer.array[2] = IMUData.acc[2];
+            // accelerometer.array[0] = IMUData.acc[0];
+            // accelerometer.array[1] = IMUData.acc[1];
+            // accelerometer.array[2] = IMUData.acc[2];
 
-            FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, IMUData.deltaTime);
+            //FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, IMUData.deltaTime);
 
             if (IMUCalibrationData.sampleCounter >= CALIB_TIME_MS) 
             {
@@ -202,6 +202,7 @@ static void vAHRS( void )
             accelerometer.array[1] = IMUData.acc[1];
             accelerometer.array[2] = IMUData.acc[2];
 
+            gyroscope = FusionOffsetUpdate(&offset, gyroscope);
             FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, IMUData.deltaTime);
             
             // if( xSemaphoreTake( xDisplaySemaphore, 1) == pdTRUE )

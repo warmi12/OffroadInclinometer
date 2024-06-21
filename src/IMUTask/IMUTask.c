@@ -35,7 +35,7 @@ typedef union {
     uint8_t bytes[4];
 } unia;
 
-uint8_t buffer[16];
+uint8_t buffer[40];
 
 unia float_to_bytes;
 
@@ -185,7 +185,7 @@ static void vAHRS( void )
             //     printf("TIME: %ld\n", execution_time);
             // }
 
-            IMUData.deltaTime = (float) (IMUData.timestamp - IMUData.previousTimestamp) / 2000.0f;
+            IMUData.deltaTime = (float) (IMUData.timestamp - IMUData.previousTimestamp) / 500.0f;
             IMUData.previousTimestamp = IMUData.timestamp;
 
             IMUData.gyro[0] -= IMUCalibrationData.gyro[0];
@@ -218,8 +218,8 @@ static void vAHRS( void )
 
     //    }
 
-            if (IMUData.timestamp - time > (2 * 100U))
-            {
+           // if (IMUData.timestamp - time > (2 * 100U))
+           // {
                 int buffer_counter = 0;
 
                 time = IMUData.timestamp;
@@ -263,6 +263,74 @@ static void vAHRS( void )
                 buffer[buffer_counter] = float_to_bytes.bytes[3];
                 buffer_counter++;
 
+                float_to_bytes.float_val=IMUData.acc[0];
+
+                //
+                buffer[buffer_counter] = float_to_bytes.bytes[0];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[1];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[2];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[3];
+                buffer_counter++;
+
+                float_to_bytes.float_val=IMUData.acc[1];
+
+                buffer[buffer_counter] = float_to_bytes.bytes[0];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[1];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[2];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[3];
+                buffer_counter++;
+
+                float_to_bytes.float_val=IMUData.acc[2];
+
+                buffer[buffer_counter] = float_to_bytes.bytes[0];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[1];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[2];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[3];
+                buffer_counter++;
+
+                float_to_bytes.float_val=IMUData.gyro[0];
+
+                //
+                buffer[buffer_counter] = float_to_bytes.bytes[0];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[1];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[2];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[3];
+                buffer_counter++;
+
+                float_to_bytes.float_val=IMUData.gyro[1];
+
+                buffer[buffer_counter] = float_to_bytes.bytes[0];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[1];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[2];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[3];
+                buffer_counter++;
+
+                float_to_bytes.float_val=IMUData.gyro[2];
+
+                buffer[buffer_counter] = float_to_bytes.bytes[0];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[1];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[2];
+                buffer_counter++;
+                buffer[buffer_counter] = float_to_bytes.bytes[3];
+                buffer_counter++;
+
                 int counter = 0;
                 uint8_t crc = 0;
                 while (counter < buffer_counter)
@@ -286,7 +354,7 @@ static void vAHRS( void )
                 }
 
                 memset(&buffer,0,sizeof(buffer));
-            }
+           // }
 
         
         //    DEBUG

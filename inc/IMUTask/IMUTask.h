@@ -3,7 +3,7 @@
 
 #include "Fusion.h"
 
-#define SAMPLE_RATE 2000U
+#define SAMPLE_RATE 500U
 #define WAIT_TIMEOUT 1000U
 #define SEC 1
 #define CALIB_TIME_MS (5 * SEC * SAMPLE_RATE)

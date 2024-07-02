@@ -185,7 +185,7 @@ static void vAHRS( void )
             //     printf("TIME: %ld\n", execution_time);
             // }
 
-            IMUData.deltaTime = (float) (IMUData.timestamp - IMUData.previousTimestamp) / 500.0f;
+            IMUData.deltaTime = (float) (IMUData.timestamp - IMUData.previousTimestamp) / 62.0f;
             IMUData.previousTimestamp = IMUData.timestamp;
 
             IMUData.gyro[0] -= IMUCalibrationData.gyro[0];
